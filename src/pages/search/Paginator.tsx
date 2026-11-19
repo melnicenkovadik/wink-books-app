@@ -28,7 +28,7 @@ export function Paginator({ page, pageCount, onPageChange }: Props) {
 
         <li className="page-item disabled d-sm-none">
           <span className="page-link">
-            Page {page} of {pageCount}
+            {page > pageCount ? `Page ${page}` : `Page ${page} of ${pageCount}`}
           </span>
         </li>
 

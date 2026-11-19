@@ -1,5 +1,6 @@
 export { booksApi, useGetBookByIdQuery, useLazySearchBooksQuery } from './booksApi'
 export { describeApiError } from './apiError'
+export { getSearchBounds, selectSearchQueries } from './searchBounds'
 export { PLACEHOLDER_COVER_URL } from './mapVolume'
 export { BookCover } from './BookCover'
 export type { Book, SearchBooksArgs } from './types'

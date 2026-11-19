@@ -246,6 +246,31 @@ describe('pagination and page size', () => {
     expect(screen.queryByRole('button', { name: 'Page 50' })).not.toBeInTheDocument()
   })
 
+  it('does not trust a total that grows on later pages and learns where results end', async () => {
+    // what Google really does: 476 on the first page, thousands later, nothing after ~page 4
+    stubFetch((url) => {
+      const start = Number(url.searchParams.get('startIndex'))
+      if (start === 0) return { body: makeResponse('p1', 10, 60) }
+      if (start === 10) return { body: makeResponse('p2', 10, 21762) }
+      return { body: { kind: 'books#volumes', totalItems: 21762 } }
+    })
+    const { user } = renderApp('/?q=harry')
+    await screen.findByText('Book p1-1')
+
+    await user.click(screen.getByRole('button', { name: 'Page 2' }))
+    expect(await screen.findByText('Book p2-1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Page 6' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Page 7' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Page 6' }))
+    expect(await screen.findByText('No results on this page.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Go to page 2' }))
+    expect(await screen.findByText('Book p2-1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Page 5' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Page 6' })).not.toBeInTheDocument()
+  })
+
   it('offers a way back from an empty far page without jumping on its own', async () => {
     const calls = stubFetch((url) =>
       url.searchParams.get('startIndex') === '0'

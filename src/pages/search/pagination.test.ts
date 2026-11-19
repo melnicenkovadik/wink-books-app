@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getPageCount, getPageItems } from './pagination'
+import { getKnownPageCount, getPageCount, getPageItems } from './pagination'
 
 describe('getPageCount', () => {
   it.each([
@@ -36,5 +36,19 @@ describe('getPageItems', () => {
 
   it('still shows the way back when the current page is past the end', () => {
     expect(getPageItems(50, 3)).toEqual([1, 'ellipsis', 3])
+  })
+})
+
+describe('getKnownPageCount', () => {
+  it('uses the total when nothing else is known', () => {
+    expect(getKnownPageCount(95, 10, {})).toBe(10)
+  })
+
+  it('stops before the first page that came back empty', () => {
+    expect(getKnownPageCount(21762, 5, { firstEmptyPage: 81 })).toBe(80)
+  })
+
+  it('never hides a page that really has books', () => {
+    expect(getKnownPageCount(20, 10, { lastPageWithBooks: 4 })).toBe(4)
   })
 })

@@ -1,12 +1,13 @@
 import { useRef } from 'react'
+import { useSelector } from 'react-redux'
 import { useLocation } from 'react-router'
-import { describeApiError } from '../../entities/book'
+import { describeApiError, getSearchBounds, selectSearchQueries } from '../../entities/book'
 import { GOOGLE_BOOKS_API_KEY } from '../../shared/config'
 import { BookListItem } from './BookListItem'
 import { BookListSkeleton } from './BookListSkeleton'
 import { PageSizeSelect } from './PageSizeSelect'
 import { Paginator } from './Paginator'
-import { getPageCount } from './pagination'
+import { getKnownPageCount } from './pagination'
 import { SearchBar } from './SearchBar'
 import { useBookSearch } from './useBookSearch'
 import { useSearchUrlState } from './useSearchUrlState'
@@ -23,6 +24,7 @@ export function SearchPage() {
     hasApiKey && q ? { q, page, limit } : null,
   )
   const apiError = describeApiError(error)
+  const bounds = getSearchBounds(useSelector(selectSearchQueries), q, limit)
   const focusBookId = (location.state as { focusBookId?: string } | null)?.focusBookId
 
   const handlePageChange = (nextPage: number) => {
@@ -96,7 +98,9 @@ export function SearchPage() {
       )
     }
 
-    const pageCount = getPageCount(data.totalItems, limit)
+    const totalItems = bounds.totalItems ?? data.totalItems
+    const pageCount = getKnownPageCount(totalItems, limit, bounds)
+    const lastPage = bounds.lastPageWithBooks ?? 1
     const paginator = (
       <Paginator page={page} pageCount={pageCount} onPageChange={handlePageChange} />
     )
@@ -115,9 +119,9 @@ export function SearchPage() {
           <button
             type="button"
             className="btn btn-primary mb-4"
-            onClick={() => handlePageChange(1)}
+            onClick={() => handlePageChange(lastPage)}
           >
-            Go to page 1
+            Go to page {lastPage}
           </button>
           {paginator}
         </div>
@@ -127,7 +131,7 @@ export function SearchPage() {
     return (
       <>
         <p className="small text-body-secondary" role="status">
-          About {data.totalItems.toLocaleString('en')} results, page {page} of {pageCount}
+          About {totalItems.toLocaleString('en')} results, page {page} of {pageCount}
         </p>
         <ul className="book-grid">
           {data.books.map((book) => (
