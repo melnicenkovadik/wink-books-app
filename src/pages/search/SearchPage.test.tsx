@@ -142,6 +142,27 @@ describe('live search', () => {
   })
 })
 
+describe('history', () => {
+  it('follows Back even when a typed search is still waiting for the debounce', async () => {
+    stubFetch(replyByQuery)
+    const { user } = renderApp('/?q=dune')
+    expect(await screen.findByText('Book dune-p1-1')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Page 2' }))
+    expect(await screen.findByText('Book dune-p2-1')).toBeInTheDocument()
+
+    await user.type(searchInput(), 'marine biology', {
+      initialSelectionStart: 0,
+      initialSelectionEnd: 4,
+    })
+    await user.click(screen.getByRole('button', { name: 'Browser back' }))
+    await new Promise((resolve) => setTimeout(resolve, 400))
+
+    expect(currentUrl()).toBe('/?q=dune')
+    expect(searchInput()).toHaveValue('dune')
+    expect(screen.getByText('Book dune-p1-1')).toBeInTheDocument()
+  })
+})
+
 describe('pagination and page size', () => {
   it('reads the state from the URL', async () => {
     const calls = stubFetch(replyByQuery)
@@ -274,6 +295,48 @@ describe('result states', () => {
     await act(async () => calls[1].respond(makeResponse('harry', 10)))
 
     expect(await screen.findByText('Book harry-1')).toBeInTheDocument()
+  })
+
+  it('cancels a retried request when the query changes', async () => {
+    const calls = stubFetch()
+    const { user } = renderApp('/?q=plant')
+    await waitFor(() => expect(calls).toHaveLength(1))
+    await act(async () => calls[0].fail())
+
+    await user.click(await screen.findByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(calls).toHaveLength(2))
+    await user.type(searchInput(), ' biology')
+    await waitFor(() => expect(calls).toHaveLength(3))
+
+    expect(calls[1].signal.aborted).toBe(true)
+    await act(async () => calls[2].respond(makeResponse('biology', 10)))
+    expect(await screen.findByText('Book biology-1')).toBeInTheDocument()
+  })
+
+  it('offers the first page when a far page fails, whatever the reason', async () => {
+    stubFetch((url) =>
+      url.searchParams.get('startIndex') === '0'
+        ? { body: makeResponse('p1', 10) }
+        : { body: { error: { code: 400, message: 'Invalid parameters.' } }, status: 400 },
+    )
+    const { user } = renderApp('/?q=harry&page=501&limit=5')
+
+    expect(await screen.findByText(/The search request was rejected/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Go to page 1' }))
+
+    expect(await screen.findByText('Book p1-1')).toBeInTheDocument()
+    expect(currentUrl()).toBe('/?q=harry&limit=5')
+  })
+
+  it('does not offer the first page when the first page itself fails', async () => {
+    stubFetch(() => ({
+      body: { error: { code: 400, message: 'API key not valid.' } },
+      status: 400,
+    }))
+    renderApp('/?q=harry')
+
+    expect(await screen.findByText(/API key not valid/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Go to page 1' })).not.toBeInTheDocument()
   })
 
   it('uses the WiNK placeholder for a book without a cover', async () => {

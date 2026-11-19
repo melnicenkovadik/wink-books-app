@@ -58,6 +58,15 @@ export function SearchPage() {
                 Try again
               </button>
             )}
+            {page > 1 && (
+              <button
+                type="button"
+                className="btn btn-outline-danger btn-sm"
+                onClick={() => handlePageChange(1)}
+              >
+                Go to page 1
+              </button>
+            )}
           </div>
         )
       }

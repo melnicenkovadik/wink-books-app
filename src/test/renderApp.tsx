@@ -2,13 +2,22 @@ import { render } from '@testing-library/react'
 import { StrictMode } from 'react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
-import { MemoryRouter, useLocation } from 'react-router'
+import { MemoryRouter, useLocation, useNavigate } from 'react-router'
 import { App } from '../app/App'
 import { createStore } from '../app/store'
 
-function CurrentUrl() {
+// Shows the current URL and stands in for the browser Back button.
+function BrowserChrome() {
   const location = useLocation()
-  return <output data-testid="url">{location.pathname + location.search}</output>
+  const navigate = useNavigate()
+  return (
+    <>
+      <output data-testid="url">{location.pathname + location.search}</output>
+      <button type="button" onClick={() => navigate(-1)}>
+        Browser back
+      </button>
+    </>
+  )
 }
 
 export function renderApp(initialUrl = '/') {
@@ -19,7 +28,7 @@ export function renderApp(initialUrl = '/') {
       <Provider store={store}>
         <MemoryRouter initialEntries={[initialUrl]}>
           <App />
-          <CurrentUrl />
+          <BrowserChrome />
         </MemoryRouter>
       </Provider>
     </StrictMode>,
