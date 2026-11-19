@@ -2,7 +2,10 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useLocation } from 'react-router'
 import { normalizeQuery } from './useSearchUrlState'
 
-export const SEARCH_DEBOUNCE_MS = 300
+// The task says "update the results for every new character", so there is no delay:
+// every keystroke searches at once and cancels the previous request.
+// To debounce instead, set this to e.g. 300. Fewer requests, results come a bit later.
+export const SEARCH_DEBOUNCE_MS: number = 0
 
 type Props = {
   query: string
@@ -29,8 +32,8 @@ export function SearchBar({ query, onSearch }: Props) {
     setText(value)
     window.clearTimeout(timer.current)
 
-    if (normalizeQuery(value) === '') {
-      onSearch('')
+    if (SEARCH_DEBOUNCE_MS === 0 || normalizeQuery(value) === '') {
+      onSearch(value)
       return
     }
     timer.current = window.setTimeout(() => onSearch(value), SEARCH_DEBOUNCE_MS)

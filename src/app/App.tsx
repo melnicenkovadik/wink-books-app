@@ -1,9 +1,12 @@
-import { Link, Route, Routes } from 'react-router'
+import { Link, Route, Routes, useLocation } from 'react-router'
 import { BookDetailsPage } from '../pages/book-details'
 import { NotFoundPage } from '../pages/not-found/NotFoundPage'
 import { SearchPage } from '../pages/search'
+import { ErrorBoundary } from '../shared/ui/ErrorBoundary'
 
 export function App() {
+  const location = useLocation()
+
   return (
     <>
       <header className="app-header">
@@ -17,11 +20,13 @@ export function App() {
         </div>
       </header>
       <main>
-        <Routes>
-          <Route path="/" element={<SearchPage />} />
-          <Route path="/books/:volumeId" element={<BookDetailsPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        <ErrorBoundary resetKey={location.key} message="This page could not be shown.">
+          <Routes>
+            <Route path="/" element={<SearchPage />} />
+            <Route path="/books/:volumeId" element={<BookDetailsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
     </>
   )

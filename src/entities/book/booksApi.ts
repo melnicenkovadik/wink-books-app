@@ -1,11 +1,12 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
-import { GOOGLE_BOOKS_API_KEY, GOOGLE_BOOKS_API_URL } from '../../shared/config'
+import { createApi } from '@reduxjs/toolkit/query/react'
+import { GOOGLE_BOOKS_API_KEY } from '../../shared/config'
+import { baseQueryWithRetry } from './baseQuery'
 import { mapVolume } from './mapVolume'
 import type { Book, SearchBooksArgs, SearchBooksResult, VolumeDto, VolumesResponse } from './types'
 
 export const booksApi = createApi({
   reducerPath: 'booksApi',
-  baseQuery: fetchBaseQuery({ baseUrl: GOOGLE_BOOKS_API_URL }),
+  baseQuery: baseQueryWithRetry,
   keepUnusedDataFor: 300,
   endpoints: (build) => ({
     searchBooks: build.query<SearchBooksResult, SearchBooksArgs>({
@@ -15,6 +16,7 @@ export const booksApi = createApi({
           q,
           startIndex: (page - 1) * limit,
           maxResults: limit,
+          printType: 'books',
           key: GOOGLE_BOOKS_API_KEY,
         },
       }),

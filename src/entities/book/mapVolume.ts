@@ -13,6 +13,15 @@ export function htmlToText(html: string | undefined): string {
   return (doc.body.textContent ?? '').replace(/\n{3,}/g, '\n\n').trim()
 }
 
+// For books that are not for sale Google still sends a Play Store infoLink,
+// and that page is a 404. The Google Books page of the same volume works.
+function getInfoLink(volume: VolumeDto) {
+  const infoLink = toHttps(volume.volumeInfo?.infoLink)
+  const isDeadPlayLink =
+    infoLink?.includes('play.google.com') && volume.saleInfo?.saleability === 'NOT_FOR_SALE'
+  return isDeadPlayLink ? `https://books.google.com/books?id=${volume.id}` : infoLink
+}
+
 export function mapVolume(volume: VolumeDto): Book {
   const info = volume.volumeInfo ?? {}
   const images = info.imageLinks ?? {}
@@ -32,6 +41,6 @@ export function mapVolume(volume: VolumeDto): Book {
     coverUrl:
       toHttps(images.medium ?? images.small ?? images.thumbnail ?? images.smallThumbnail) ??
       PLACEHOLDER_COVER_URL,
-    infoLink: toHttps(info.infoLink),
+    infoLink: getInfoLink(volume),
   }
 }

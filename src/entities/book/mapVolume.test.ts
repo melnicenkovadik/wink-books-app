@@ -39,6 +39,28 @@ describe('mapVolume', () => {
   })
 })
 
+describe('infoLink', () => {
+  const playLink = 'https://play.google.com/store/books/details?id=abc&source=gbs_api'
+
+  it('keeps the Play Store link for a book that is for sale', () => {
+    const book = mapVolume({
+      id: 'abc',
+      volumeInfo: { infoLink: playLink },
+      saleInfo: { saleability: 'FOR_SALE' },
+    })
+    expect(book.infoLink).toBe(playLink)
+  })
+
+  it('swaps a Play Store link that leads to a 404 for the Google Books page', () => {
+    const book = mapVolume({
+      id: 'abc',
+      volumeInfo: { infoLink: playLink },
+      saleInfo: { saleability: 'NOT_FOR_SALE' },
+    })
+    expect(book.infoLink).toBe('https://books.google.com/books?id=abc')
+  })
+})
+
 describe('htmlToText', () => {
   it('turns markup into plain text with line breaks', () => {
     expect(htmlToText('<p>First <b>bold</b></p><p>Second<br>line</p>')).toBe(

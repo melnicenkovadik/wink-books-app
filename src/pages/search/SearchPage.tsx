@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux'
 import { useLocation } from 'react-router'
 import { describeApiError, getSearchBounds, selectSearchQueries } from '../../entities/book'
 import { GOOGLE_BOOKS_API_KEY } from '../../shared/config'
+import { ErrorAlert } from '../../shared/ui/ErrorAlert'
+import { ErrorBoundary } from '../../shared/ui/ErrorBoundary'
 import { BookListItem } from './BookListItem'
 import { BookListSkeleton } from './BookListSkeleton'
 import { PageSizeSelect } from './PageSizeSelect'
@@ -66,16 +68,7 @@ export function SearchPage() {
     if (!data) {
       if (apiError && !isFetching) {
         return (
-          <div
-            className="alert alert-danger d-flex flex-wrap align-items-center gap-3"
-            role="alert"
-          >
-            <span className="flex-grow-1">{apiError.message}</span>
-            {apiError.canRetry && (
-              <button type="button" className="btn btn-outline-danger btn-sm" onClick={retry}>
-                Try again
-              </button>
-            )}
+          <ErrorAlert message={apiError.message} onRetry={apiError.canRetry ? retry : undefined}>
             {page > 1 && (
               <button
                 type="button"
@@ -85,7 +78,7 @@ export function SearchPage() {
                 Go to page 1
               </button>
             )}
-          </div>
+          </ErrorAlert>
         )
       }
       return (
@@ -135,7 +128,15 @@ export function SearchPage() {
         </p>
         <ul className="book-grid">
           {data.books.map((book) => (
-            <BookListItem key={book.id} book={book} shouldFocus={book.id === focusBookId} />
+            <li key={book.id}>
+              <ErrorBoundary
+                fallback={
+                  <div className="book-card text-body-secondary">This book could not be shown.</div>
+                }
+              >
+                <BookListItem book={book} shouldFocus={book.id === focusBookId} />
+              </ErrorBoundary>
+            </li>
           ))}
         </ul>
         {paginator}
@@ -168,7 +169,9 @@ export function SearchPage() {
         </div>
       </section>
       <div ref={results} tabIndex={-1} className="container py-4 search-results">
-        {renderResults()}
+        <ErrorBoundary resetKey={`${q}|${page}|${limit}`} message="The results could not be shown.">
+          {renderResults()}
+        </ErrorBoundary>
       </div>
     </>
   )

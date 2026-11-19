@@ -21,6 +21,9 @@ export type VolumeDto = {
     language?: string
     infoLink?: string
   }
+  saleInfo?: {
+    saleability?: string
+  }
 }
 
 export type VolumesResponse = {

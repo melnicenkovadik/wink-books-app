@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { dailyQuotaError, makeResponse, makeVolume } from '../../test/fixtures'
-import { stubFetch } from '../../test/fetchStub'
+import { stubFetch, type FetchCall } from '../../test/fetchStub'
 import { renderApp } from '../../test/renderApp'
 
 const searchInput = () => screen.getByRole('searchbox', { name: 'Search books' })
@@ -15,6 +15,14 @@ const replyByQuery = (url: URL) => {
   return { body: makeResponse(`${q}-p${page}`, limit) }
 }
 
+// fails the request and every automatic retry of it
+async function failAll(calls: FetchCall[], times: number) {
+  for (let attempt = 1; attempt <= times; attempt++) {
+    await waitFor(() => expect(calls).toHaveLength(attempt))
+    await act(async () => calls[attempt - 1].fail())
+  }
+}
+
 describe('live search', () => {
   it('shows a hint and sends nothing before the user types', () => {
     const calls = stubFetch(replyByQuery)
@@ -24,46 +32,29 @@ describe('live search', () => {
     expect(calls).toHaveLength(0)
   })
 
-  it('searches without Enter, once the user pauses typing', async () => {
-    const calls = stubFetch(replyByQuery)
-    const { user } = renderApp()
-
-    await user.type(searchInput(), 'harry')
-
-    expect(await screen.findByText('Book harry-p1-1')).toBeInTheDocument()
-    expect(calls).toHaveLength(1)
-    expect(calls[0].url.origin + calls[0].url.pathname).toBe(
-      'https://www.googleapis.com/books/v1/volumes',
-    )
-    expect(Object.fromEntries(calls[0].url.searchParams)).toEqual({
-      q: 'harry',
-      startIndex: '0',
-      maxResults: '10',
-      key: 'test-key',
-    })
-    expect(currentUrl()).toBe('/?q=harry')
-  })
-
-  it('searches for a single character', async () => {
-    stubFetch(replyByQuery)
-    const { user } = renderApp()
-
-    await user.type(searchInput(), 'a')
-
-    expect(await screen.findByText('Book a-p1-1')).toBeInTheDocument()
-  })
-
-  it('cancels the previous request when the query changes', async () => {
+  it('searches on every typed character and cancels the requests it no longer needs', async () => {
     const calls = stubFetch()
     const { user } = renderApp()
 
-    await user.type(searchInput(), 'ha')
-    await waitFor(() => expect(calls).toHaveLength(1))
-    await user.type(searchInput(), 'rry')
-    await waitFor(() => expect(calls).toHaveLength(2))
+    await user.type(searchInput(), 'har')
+    await waitFor(() => expect(calls).toHaveLength(3))
 
-    expect(calls[0].signal.aborted).toBe(true)
-    expect(calls[1].signal.aborted).toBe(false)
+    expect(calls.map((call) => call.url.searchParams.get('q'))).toEqual(['h', 'ha', 'har'])
+    expect(calls.map((call) => call.signal.aborted)).toEqual([true, true, false])
+    expect(calls[2].url.origin + calls[2].url.pathname).toBe(
+      'https://www.googleapis.com/books/v1/volumes',
+    )
+    expect(Object.fromEntries(calls[2].url.searchParams)).toEqual({
+      q: 'har',
+      startIndex: '0',
+      maxResults: '10',
+      printType: 'books',
+      key: 'test-key',
+    })
+
+    await act(async () => calls[2].respond(makeResponse('har', 10)))
+    expect(await screen.findByText('Book har-1')).toBeInTheDocument()
+    expect(currentUrl()).toBe('/?q=har')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
@@ -71,28 +62,24 @@ describe('live search', () => {
     const calls = stubFetch()
     const { user } = renderApp()
 
-    await user.type(searchInput(), 'ha')
-    await waitFor(() => expect(calls).toHaveLength(1))
-    await user.type(searchInput(), 'rry')
-    await waitFor(() => expect(calls).toHaveLength(2))
+    await user.type(searchInput(), 'har')
+    await waitFor(() => expect(calls).toHaveLength(3))
 
-    await act(async () => calls[1].respond(makeResponse('harry', 10)))
-    await act(async () => calls[0].respond(makeResponse('ha', 10)))
+    await act(async () => calls[2].respond(makeResponse('har', 10)))
+    await act(async () => calls[1].respond(makeResponse('ha', 10)))
 
-    expect(await screen.findByText('Book harry-1')).toBeInTheDocument()
+    expect(await screen.findByText('Book har-1')).toBeInTheDocument()
     expect(screen.queryByText('Book ha-1')).not.toBeInTheDocument()
   })
 
   it('shows skeletons instead of the previous books while a new query loads', async () => {
     const calls = stubFetch()
-    const { user } = renderApp()
-
-    await user.type(searchInput(), 'ha')
+    const { user } = renderApp('/?q=ha')
     await waitFor(() => expect(calls).toHaveLength(1))
     await act(async () => calls[0].respond(makeResponse('ha', 10)))
     expect(await screen.findByText('Book ha-1')).toBeInTheDocument()
 
-    await user.type(searchInput(), 'rry')
+    await user.type(searchInput(), 'r')
     await waitFor(() => expect(calls).toHaveLength(2))
 
     expect(screen.queryByText('Book ha-1')).not.toBeInTheDocument()
@@ -101,10 +88,9 @@ describe('live search', () => {
 
   it('reuses the cache when the user goes back to an earlier query', async () => {
     const calls = stubFetch(replyByQuery)
-    const { user } = renderApp()
-
-    await user.type(searchInput(), 'ha')
+    const { user } = renderApp('/?q=ha')
     expect(await screen.findByText('Book ha-p1-1')).toBeInTheDocument()
+
     await user.type(searchInput(), 'r')
     expect(await screen.findByText('Book har-p1-1')).toBeInTheDocument()
     await user.type(searchInput(), '{Backspace}')
@@ -115,10 +101,9 @@ describe('live search', () => {
 
   it('clears the results and cancels the request when the field is emptied', async () => {
     const calls = stubFetch()
-    const { user } = renderApp()
-
-    await user.type(searchInput(), 'ha')
+    const { user } = renderApp('/?q=ha')
     await waitFor(() => expect(calls).toHaveLength(1))
+
     await user.clear(searchInput())
 
     expect(screen.getByText('Start typing to search for books.')).toBeInTheDocument()
@@ -129,15 +114,24 @@ describe('live search', () => {
 
   it('keeps focus and a trailing space in the field without a new request', async () => {
     const calls = stubFetch(replyByQuery)
-    const { user } = renderApp()
-
-    await user.type(searchInput(), 'harry')
+    const { user } = renderApp('/?q=harry')
     expect(await screen.findByText('Book harry-p1-1')).toBeInTheDocument()
+
     await user.type(searchInput(), ' ')
-    await new Promise((resolve) => setTimeout(resolve, 400))
 
     expect(searchInput()).toHaveValue('harry ')
     expect(searchInput()).toHaveFocus()
+    expect(calls).toHaveLength(1)
+  })
+
+  it('searches for a pasted text with one request', async () => {
+    const calls = stubFetch(replyByQuery)
+    const { user } = renderApp()
+
+    await user.click(searchInput())
+    await user.paste('harry potter')
+
+    expect(await screen.findByText('Book harry potter-p1-1')).toBeInTheDocument()
     expect(calls).toHaveLength(1)
   })
 })
@@ -295,47 +289,67 @@ describe('result states', () => {
     expect(await screen.findByText('No books found for "zzzz".')).toBeInTheDocument()
   })
 
-  it('reports an exhausted daily quota without a retry button', async () => {
-    stubFetch(() => ({ body: dailyQuotaError, status: 429 }))
+  it('reports an exhausted daily quota without retrying or a retry button', async () => {
+    const calls = stubFetch(() => ({ body: dailyQuotaError, status: 429 }))
     renderApp('/?q=harry')
 
     expect(
       await screen.findByText('The daily request quota for this API key is used up.'),
     ).toBeInTheDocument()
+    expect(calls).toHaveLength(1)
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
   })
 
-  it('lets the user retry after a network error', async () => {
+  it('repeats a failed request on its own and shows no error when it recovers', async () => {
     const calls = stubFetch()
-    const { user } = renderApp('/?q=harry')
+    renderApp('/?q=harry')
     await waitFor(() => expect(calls).toHaveLength(1))
     await act(async () => calls[0].fail())
-
-    expect(
-      await screen.findByText('Network error. Check your connection and try again.'),
-    ).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Try again' }))
     await waitFor(() => expect(calls).toHaveLength(2))
     await act(async () => calls[1].respond(makeResponse('harry', 10)))
 
     expect(await screen.findByText('Book harry-1')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('gives up after three retries and then lets the user try again', async () => {
+    const calls = stubFetch()
+    const { user } = renderApp('/?q=harry')
+    await failAll(calls, 4)
+
+    expect(
+      await screen.findByText('Network error. Check your connection and try again.'),
+    ).toBeInTheDocument()
+    expect(calls).toHaveLength(4)
+
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(calls).toHaveLength(5))
+    await act(async () => calls[4].respond(makeResponse('harry', 10)))
+
+    expect(await screen.findByText('Book harry-1')).toBeInTheDocument()
+  })
+
+  it('does not repeat a request the API refused', async () => {
+    const calls = stubFetch(() => ({ body: { error: { message: 'Bad' } }, status: 400 }))
+    renderApp('/?q=harry')
+
+    expect(await screen.findByText(/The search request was rejected/)).toBeInTheDocument()
+    expect(calls).toHaveLength(1)
   })
 
   it('cancels a retried request when the query changes', async () => {
     const calls = stubFetch()
     const { user } = renderApp('/?q=plant')
-    await waitFor(() => expect(calls).toHaveLength(1))
-    await act(async () => calls[0].fail())
+    await failAll(calls, 4)
 
     await user.click(await screen.findByRole('button', { name: 'Try again' }))
-    await waitFor(() => expect(calls).toHaveLength(2))
-    await user.type(searchInput(), ' biology')
-    await waitFor(() => expect(calls).toHaveLength(3))
+    await waitFor(() => expect(calls).toHaveLength(5))
+    await user.type(searchInput(), 's')
+    await waitFor(() => expect(calls).toHaveLength(6))
 
-    expect(calls[1].signal.aborted).toBe(true)
-    await act(async () => calls[2].respond(makeResponse('biology', 10)))
-    expect(await screen.findByText('Book biology-1')).toBeInTheDocument()
+    expect(calls[4].signal.aborted).toBe(true)
+    await act(async () => calls[5].respond(makeResponse('plants', 10)))
+    expect(await screen.findByText('Book plants-1')).toBeInTheDocument()
   })
 
   it('offers the first page when a far page fails, whatever the reason', async () => {

@@ -43,19 +43,25 @@ On CodeSandbox I set it in the sandbox env variables.
 
 - Search state (`q`, `page`, `limit`) is in the URL, so reload, back/forward and sharing a link
   just work. Redux only keeps the server data (RTK Query cache).
-- Search is live with a 300 ms debounce. I didn't want to send a request for every single letter.
-  It is one constant in `SearchBar.tsx` if you want to change it.
-- When the query or page changes, the previous request is aborted. Pages that were already loaded
-  come from the cache.
+- Search is live with no delay, as the task says: every typed character starts a search and the
+  previous request is aborted. Pages that were already loaded come from the cache. If you prefer a
+  debounce, it is one constant (`SEARCH_DEBOUNCE_MS` in `SearchBar.tsx`).
 - The list only shows data for the current query, so a slow old response can't replace new results.
-- `totalItems` from Google is not stable, it changes between pages of the same search. The number
-  of pages is counted from the latest response, so the paginator can jump a bit. If a far page is
-  empty or fails there is a button to go back to page 1.
+- A request that fails because of the network or a 5xx is repeated up to 3 times before the user
+  sees an error with a "Try again" button. 4xx answers are not repeated, a 429 would only burn more
+  quota. The rule lives in one place, `entities/book/baseQuery.ts`.
+- If a part of the page crashes while rendering, only that part shows an error (`ErrorBoundary`):
+  one broken book card does not take down the list, and the search bar stays usable.
+- `totalItems` from Google is not reliable. It grows on later pages and promises far more than the
+  API returns ("harry potter" says 476 on page 1, 21 762 later, and the books end around 400). The
+  page count uses the smallest total seen for the query and is cut at the first empty page.
+- For books that are not for sale Google sends a Play Store `infoLink` that opens a 404. In that
+  case the button opens the Google Books page of the same volume.
+- Only books are requested (`printType=books`), by default the endpoint also returns magazines.
 - Book descriptions come as HTML. They are converted to plain text, nothing is injected as HTML.
 - Bootstrap instead of Tailwind because the task has Bootstrap in "Required". Theme colours are in
-  `src/app/styles/_theme.scss`. `#FF5039` is used for the cover placeholder as asked, but for links
-  and buttons I took a darker shade, white text on `#FF5039` is hard to read.
-- Description is cut to two lines with CSS `line-clamp`.
+  `src/app/styles/_theme.scss`. `#FF5039` is used for the cover placeholder as asked and as the
+  accent colour, but text links and buttons use a darker shade, white on `#FF5039` is hard to read.
 
 ## Structure
 
@@ -72,3 +78,29 @@ src/
 
 Vitest + Testing Library. `fetch` is stubbed, the tests check requests, aborts, late responses and
 cache. Layout was checked by hand on 360, 768 and 1280 px.
+
+## Requirements, and where to look
+
+Each row: what the task asks, how to see it in the running app, and where the code and test are.
+
+| Task                                    | Try it                                                         | Code                                           | Test                                                  |
+| --------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------- |
+| React SPA, responsive                   | resize the window, open a book, go back: no page reload        | `src/app/App.tsx`, `src/app/styles/main.scss`  | checked by hand at 360 / 768 / 1280 px                |
+| `GET /books/v1/volumes?q=`              | type `dune`, see the request in the Network tab                | `entities/book/booksApi.ts`                    | "searches on every typed character"                   |
+| Search bar, live on every character     | type slowly: results change after each letter, no Enter        | `pages/search/SearchBar.tsx`, `useBookSearch.ts` | `SearchPage.test.tsx`, "live search"                |
+| Pagination through API parameters       | go to page 3: `startIndex=20&maxResults=10` in the request     | `entities/book/booksApi.ts`                    | "changes the page with startIndex"                    |
+| Number of pages depends on the total    | change "Per page": the last page number changes                | `pages/search/pagination.ts`, `entities/book/searchBounds.ts` | `pagination.test.ts`, "does not trust a total" |
+| Page size 5, 10, 15, 20                 | the "Per page" select                                          | `pages/search/PageSizeSelect.tsx`              | "changes the page size", "ignores broken values"      |
+| Paginator                               | Previous / numbers / Next under the list                       | `pages/search/Paginator.tsx`                   | "derives the number of pages"                         |
+| Detail page with the book info          | click a title or a cover                                       | `pages/book-details/BookDetailsPage.tsx`       | `BookDetailsPage.test.tsx`                            |
+| `infoLink` on the detail page           | "View on Google Books" button                                  | `entities/book/mapVolume.ts`                   | "links to the infoLink", `mapVolume.test.ts`          |
+| Placeholder when there is no image      | search `report 1890`: red "Book Cover" tiles                   | `PLACEHOLDER_COVER_URL` in `mapVolume.ts`      | "uses the WiNK placeholder"                           |
+| Description cut to 2 lines with "..."   | any long description in the list                               | `.book-description` in `main.scss`             | checked by hand                                       |
+| Latest Bootstrap                        | `bootstrap` 5.3.9 in `package.json`                            | `src/app/styles/main.scss`                     | -                                                     |
+| Nice to have: theme colours with Sass   | coral accent, buttons, paginator                               | `src/app/styles/_theme.scss`                   | -                                                     |
+| Nice to have: Redux Toolkit             | Redux DevTools: `booksApi` cache                               | `src/app/store.ts`, `entities/book/booksApi.ts` | all page tests run with the real store               |
+| Nice to have: TypeScript                | `npm run typecheck`                                            | strict mode, no `any`                          | -                                                     |
+
+Not asked, but handled: cancelled requests, late responses, cache, automatic retries, error
+states (no key, quota, network, 400, 404, empty far page), render crashes, Back/Forward while
+typing, focus coming back to the opened book.

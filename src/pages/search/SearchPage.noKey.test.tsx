@@ -3,8 +3,8 @@ import { expect, it, vi } from 'vitest'
 import { stubFetch } from '../../test/fetchStub'
 import { renderApp } from '../../test/renderApp'
 
-vi.mock('../../shared/config', () => ({
-  GOOGLE_BOOKS_API_URL: 'https://www.googleapis.com/books/v1',
+vi.mock('../../shared/config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../shared/config')>()),
   GOOGLE_BOOKS_API_KEY: '',
 }))
 

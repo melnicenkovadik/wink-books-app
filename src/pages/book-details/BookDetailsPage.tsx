@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { BookCover, describeApiError, useGetBookByIdQuery } from '../../entities/book'
 import { GOOGLE_BOOKS_API_KEY } from '../../shared/config'
+import { ErrorAlert } from '../../shared/ui/ErrorAlert'
 
 export function BookDetailsPage() {
   const { volumeId = '' } = useParams()
@@ -45,17 +46,10 @@ export function BookDetailsPage() {
     if (!book) {
       if (apiError && !isFetching) {
         return (
-          <div
-            className="alert alert-danger d-flex flex-wrap align-items-center gap-3"
-            role="alert"
-          >
-            <span className="flex-grow-1">{apiError.message}</span>
-            {apiError.canRetry && (
-              <button type="button" className="btn btn-outline-danger btn-sm" onClick={refetch}>
-                Try again
-              </button>
-            )}
-          </div>
+          <ErrorAlert
+            message={apiError.message}
+            onRetry={apiError.canRetry ? refetch : undefined}
+          />
         )
       }
       return (
