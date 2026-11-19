@@ -60,6 +60,13 @@ describe('describeApiError', () => {
     })
   })
 
+  it('says when the request timed out and offers a retry', () => {
+    expect(describeApiError({ status: 'TIMEOUT_ERROR', error: 'timeout' })).toEqual({
+      message: 'Google Books took too long to answer.',
+      canRetry: true,
+    })
+  })
+
   it('does not report a cancelled fetch as a network error', () => {
     expect(
       describeApiError({ status: 'FETCH_ERROR', error: 'AbortError: The operation was aborted.' }),

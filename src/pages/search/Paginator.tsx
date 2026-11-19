@@ -4,9 +4,11 @@ type Props = {
   page: number
   pageCount: number
   onPageChange: (page: number) => void
+  // the user is about to go to this page (hover or focus on Previous/Next)
+  onPageIntent?: (page: number) => void
 }
 
-export function Paginator({ page, pageCount, onPageChange }: Props) {
+export function Paginator({ page, pageCount, onPageChange, onPageIntent }: Props) {
   if (pageCount <= 1) return null
 
   const isFirst = page <= 1
@@ -21,6 +23,8 @@ export function Paginator({ page, pageCount, onPageChange }: Props) {
             className="page-link"
             disabled={isFirst}
             onClick={() => onPageChange(page - 1)}
+            onMouseEnter={() => onPageIntent?.(page - 1)}
+            onFocus={() => onPageIntent?.(page - 1)}
           >
             Previous
           </button>
@@ -61,6 +65,8 @@ export function Paginator({ page, pageCount, onPageChange }: Props) {
             className="page-link"
             disabled={isLast}
             onClick={() => onPageChange(page + 1)}
+            onMouseEnter={() => onPageIntent?.(page + 1)}
+            onFocus={() => onPageIntent?.(page + 1)}
           >
             Next
           </button>

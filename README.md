@@ -50,6 +50,12 @@ On CodeSandbox I set it in the sandbox env variables.
   previous request is aborted. Pages that were already loaded come from the cache. If you prefer a
   debounce, it is one constant (`SEARCH_DEBOUNCE_MS` in `SearchBar.tsx`).
 - The list only shows data for the current query, so a slow old response can't replace new results.
+- While another page of the same search loads, the current page stays on screen (dimmed), so the
+  layout does not jump. A new query shows skeletons instead, never the books of the old one.
+- Pointing at Previous/Next loads that page ahead, so the click is usually instant.
+- The list asks Google only for the fields it shows (`fields=`), the response is about 3 times
+  smaller (38 KB -> 12 KB for 10 books).
+- Requests time out after 10 s, and what is on screen is fetched again when the connection is back.
 - A request that fails because of the network or a 5xx is repeated up to 3 times before the user
   sees an error with a "Try again" button. 4xx answers are not repeated, a 429 would only burn more
   quota. The rule lives in one place, `entities/book/baseQuery.ts`.
@@ -70,6 +76,26 @@ On CodeSandbox I set it in the sandbox env variables.
   `src/app/styles/_theme.scss`. `#FF5039` is used for the cover placeholder as asked and as the
   accent colour, but text links and buttons use a darker shade, white on `#FF5039` is hard to read.
 
+What happens when you type `dun`:
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant S as useBookSearch
+    participant G as Google Books
+    U->>S: d
+    S->>G: GET q=d
+    U->>S: du
+    S--xG: abort q=d
+    S->>G: GET q=du
+    U->>S: dun
+    S--xG: abort q=du
+    S->>G: GET q=dun
+    G-->>S: 200
+    S-->>U: results for "dun" only
+    Note over S,G: a network error or 5xx here is retried up to 3 times
+```
+
 ## Structure
 
 ```
@@ -83,11 +109,11 @@ src/
 
 ## Tests
 
-`npm test` runs 127 tests (Vitest + Testing Library). `fetch` is replaced with a stub that records
+`npm test` runs 138 tests (Vitest + Testing Library). `fetch` is replaced with a stub that records
 every request and its `AbortSignal`, and the app is rendered in `StrictMode` like in production
 code, so the tests check real behaviour: one request per character, cancelled requests, late
 responses, cache hits, automatic retries, the real end of the results, error states, Back/Forward,
-focus, the theme switch and the sanitised description. Layout was checked by hand on 360, 768 and
+focus, the theme switch, prefetching and the sanitised description. Layout was checked by hand on 360, 768 and
 1280 px.
 
 ## Requirements, and where to look
@@ -115,3 +141,16 @@ Each row: what the task asks, how to see it in the running app, and where the co
 Not asked, but handled: cancelled requests, late responses, cache, automatic retries, error
 states (no key, quota, network, 400, 404, empty far page), render crashes, Back/Forward while
 typing, focus coming back to the opened book.
+
+## Known limitations
+
+- Google does not say where the results really end. The page count is the best estimate we have,
+  and the last pages can still be empty until one of them is opened. The button on an empty page
+  then finds the real end.
+- Every keystroke is a request, as the task asks. Cancelled requests still count against the
+  daily quota of the API key. The debounce constant is there for that case.
+- "Back to results" uses the browser history, so a book opened in a new tab links back to the plain
+  search page.
+- The two-line clamp, the layout and the colours are checked by hand, not by tests.
+- The API key is visible in the bundle, like any key used from a browser. It is restricted to the
+  Books API and to the sites of this app. A small backend proxy would be the real fix.

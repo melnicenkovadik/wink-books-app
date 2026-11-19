@@ -4,10 +4,15 @@ import { baseQueryWithRetry } from './baseQuery'
 import { mapVolume } from './mapVolume'
 import type { Book, SearchBooksArgs, SearchBooksResult, VolumeDto, VolumesResponse } from './types'
 
+// the list needs only these, the response gets about three times smaller
+const SEARCH_FIELDS =
+  'totalItems,items(id,volumeInfo(title,authors,publishedDate,description,imageLinks/thumbnail))'
+
 export const booksApi = createApi({
   reducerPath: 'booksApi',
   baseQuery: baseQueryWithRetry,
   keepUnusedDataFor: 300,
+  refetchOnReconnect: true,
   endpoints: (build) => ({
     searchBooks: build.query<SearchBooksResult, SearchBooksArgs>({
       query: ({ q, page, limit }) => ({
@@ -17,6 +22,7 @@ export const booksApi = createApi({
           startIndex: (page - 1) * limit,
           maxResults: limit,
           printType: 'books',
+          fields: SEARCH_FIELDS,
           key: GOOGLE_BOOKS_API_KEY,
         },
       }),

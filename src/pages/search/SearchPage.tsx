@@ -26,6 +26,7 @@ export function SearchPage() {
 
   return (
     <>
+      <title>{q ? `${q} - Book Search` : 'Book Search'}</title>
       <section className={q ? 'search-hero-compact' : 'search-hero'}>
         <div className="container">
           {q ? (

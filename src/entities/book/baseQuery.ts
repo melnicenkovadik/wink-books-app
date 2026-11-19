@@ -1,8 +1,16 @@
 import { fetchBaseQuery, retry } from '@reduxjs/toolkit/query/react'
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query'
-import { GOOGLE_BOOKS_API_URL, MAX_RETRIES, RETRY_DELAY_MS } from '../../shared/config'
+import {
+  GOOGLE_BOOKS_API_URL,
+  MAX_RETRIES,
+  REQUEST_TIMEOUT_MS,
+  RETRY_DELAY_MS,
+} from '../../shared/config'
 
-const rawBaseQuery = fetchBaseQuery({ baseUrl: GOOGLE_BOOKS_API_URL })
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: GOOGLE_BOOKS_API_URL,
+  timeout: REQUEST_TIMEOUT_MS,
+})
 
 // only errors that can go away on their own: no connection or a 5xx.
 // 4xx will not change, and repeating a 429 just burns more quota

@@ -35,6 +35,10 @@ export function describeApiError(
     return { message: 'Network error. Check your connection and try again.', canRetry: true }
   }
 
+  if (error.status === 'TIMEOUT_ERROR') {
+    return { message: 'Google Books took too long to answer.', canRetry: true }
+  }
+
   if (typeof error.status !== 'number') {
     return { message: 'Something went wrong.', canRetry: true }
   }

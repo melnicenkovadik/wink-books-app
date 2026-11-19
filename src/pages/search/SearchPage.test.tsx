@@ -49,6 +49,8 @@ describe('live search', () => {
       startIndex: '0',
       maxResults: '10',
       printType: 'books',
+      fields:
+        'totalItems,items(id,volumeInfo(title,authors,publishedDate,description,imageLinks/thumbnail))',
       key: 'test-key',
     })
 
@@ -147,6 +149,14 @@ describe('home screen', () => {
     expect(searchInput()).toHaveValue('Tolkien')
     expect(currentUrl()).toBe('/?q=Tolkien')
     expect(calls).toHaveLength(1)
+  })
+
+  it('puts the query into the tab title', async () => {
+    stubFetch(replyByQuery)
+    renderApp('/?q=dune')
+
+    await screen.findByText('Book dune-p1-1')
+    expect(document.title).toBe('dune - Book Search')
   })
 
   it('sends nothing for spaces only', async () => {
@@ -250,6 +260,42 @@ describe('pagination and page size', () => {
 
     await user.click(screen.getByRole('button', { name: 'Previous' }))
     expect(await screen.findByText('Book harry-p1-1')).toBeInTheDocument()
+    expect(calls).toHaveLength(2)
+  })
+
+  it('keeps the current page on screen, marked as busy, while the next one loads', async () => {
+    const calls = stubFetch()
+    const { user } = renderApp('/?q=harry')
+    await waitFor(() => expect(calls).toHaveLength(1))
+    await act(async () => calls[0].respond(makeResponse('p1', 10)))
+    await screen.findByText('Book p1-1')
+
+    await user.click(screen.getByRole('button', { name: 'Page 2' }))
+    await waitFor(() => expect(calls).toHaveLength(2))
+
+    expect(screen.getByText('Loading page 2...')).toBeInTheDocument()
+    expect(screen.getByText('Book p1-1').closest('[aria-busy="true"]')).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Page 2' })).toHaveAttribute('aria-current', 'page')
+
+    await act(async () => calls[1].respond(makeResponse('p2', 10)))
+
+    expect(await screen.findByText('Book p2-1')).toBeInTheDocument()
+    expect(screen.queryByText('Book p1-1')).not.toBeInTheDocument()
+    expect(document.querySelector('[aria-busy="true"]')).toBeNull()
+  })
+
+  it('loads the next page ahead when the user points at Next, so the click is instant', async () => {
+    const calls = stubFetch(replyByQuery)
+    const { user } = renderApp('/?q=harry')
+    await screen.findByText('Book harry-p1-1')
+
+    await user.hover(screen.getByRole('button', { name: 'Next' }))
+    await waitFor(() => expect(calls).toHaveLength(2))
+    expect(calls[1].url.searchParams.get('startIndex')).toBe('10')
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+
+    expect(await screen.findByText('Book harry-p2-1')).toBeInTheDocument()
     expect(calls).toHaveLength(2)
   })
 

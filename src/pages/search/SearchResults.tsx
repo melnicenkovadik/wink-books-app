@@ -1,5 +1,12 @@
+import { useState } from 'react'
 import { useSelector } from 'react-redux'
-import { describeApiError, getSearchBounds, selectSearchQueries } from '../../entities/book'
+import {
+  booksApi,
+  describeApiError,
+  getSearchBounds,
+  selectSearchQueries,
+  type SearchBooksResult,
+} from '../../entities/book'
 import { ErrorAlert } from '../../shared/ui/ErrorAlert'
 import { BookList } from './BookList'
 import { BookListSkeleton } from './BookListSkeleton'
@@ -13,11 +20,33 @@ type Props = SearchState & {
   onPageChange: (page: number) => void
 }
 
+type ShownPage = {
+  q: string
+  limit: number
+  data: SearchBooksResult
+}
+
 // One search: loading, error, nothing found, a page past the end, or the list.
 export function SearchResults({ q, page, limit, onPageChange }: Props) {
   const { data, error, isFetching, retry } = useBookSearch({ q, page, limit })
   const bounds = getSearchBounds(useSelector(selectSearchQueries), q, limit)
+  const prefetchSearch = booksApi.usePrefetch('searchBooks')
   const apiError = describeApiError(error)
+
+  // The last page we showed. While another page of the SAME search loads it stays
+  // on screen (dimmed), so the layout does not jump. A new query never reuses it.
+  const [shown, setShown] = useState<ShownPage>()
+  if (data && data.books.length > 0 && shown?.data !== data) setShown({ q, limit, data })
+  const previousPage = shown?.q === q && shown.limit === limit ? shown.data : undefined
+
+  const renderPaginator = (totalItems: number) => (
+    <Paginator
+      page={page}
+      pageCount={getKnownPageCount(bounds.totalItems ?? totalItems, limit, bounds)}
+      onPageChange={onPageChange}
+      onPageIntent={(nextPage) => prefetchSearch({ q, page: nextPage, limit })}
+    />
+  )
 
   if (!data) {
     if (apiError && !isFetching) {
@@ -35,6 +64,19 @@ export function SearchResults({ q, page, limit, onPageChange }: Props) {
         </ErrorAlert>
       )
     }
+    if (previousPage) {
+      return (
+        <>
+          <p className="small text-body-secondary" role="status">
+            Loading page {page}...
+          </p>
+          <div className="book-list-loading" aria-busy="true">
+            <BookList books={previousPage.books} />
+          </div>
+          {renderPaginator(previousPage.totalItems)}
+        </>
+      )
+    }
     return (
       <>
         <p className="visually-hidden" role="status">
@@ -44,10 +86,6 @@ export function SearchResults({ q, page, limit, onPageChange }: Props) {
       </>
     )
   }
-
-  const totalItems = bounds.totalItems ?? data.totalItems
-  const pageCount = getKnownPageCount(totalItems, limit, bounds)
-  const paginator = <Paginator page={page} pageCount={pageCount} onPageChange={onPageChange} />
 
   if (data.books.length === 0 && page === 1) {
     return (
@@ -66,18 +104,20 @@ export function SearchResults({ q, page, limit, onPageChange }: Props) {
         firstEmptyPage={bounds.firstEmptyPage ?? page}
         onPageChange={onPageChange}
       >
-        {paginator}
+        {renderPaginator(data.totalItems)}
       </EmptyPage>
     )
   }
 
+  const totalItems = bounds.totalItems ?? data.totalItems
   return (
     <>
       <p className="small text-body-secondary" role="status">
-        About {totalItems.toLocaleString('en')} results, page {page} of {pageCount}
+        About {totalItems.toLocaleString('en')} results, page {page} of{' '}
+        {getKnownPageCount(totalItems, limit, bounds)}
       </p>
       <BookList books={data.books} />
-      {paginator}
+      {renderPaginator(data.totalItems)}
     </>
   )
 }

@@ -50,6 +50,7 @@ function BookDetails({ volumeId }: { volumeId: string }) {
 
   return (
     <article className="book-details row g-4 mx-0">
+      <title>{`${book.title} - Book Search`}</title>
       <div className="col-8 col-sm-5 col-md-4 col-lg-3 mx-auto mx-md-0">
         <BookCover src={book.coverUrl} title={book.title} className="w-100" />
       </div>

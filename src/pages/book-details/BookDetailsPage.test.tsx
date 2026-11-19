@@ -52,6 +52,26 @@ describe('book details', () => {
     expect(screen.getByRole('link', { name: '← Back to search' })).toHaveAttribute('href', '/')
   })
 
+  it('shows the language by name, each category once, and the title in the tab', async () => {
+    stubFetch(() => ({
+      body: makeVolume('abc123', {
+        title: 'Dune',
+        language: 'it',
+        categories: ['Fiction / Science Fiction / General', 'Fiction / Fantasy / General'],
+      }),
+    }))
+    renderApp('/books/abc123')
+
+    expect(await screen.findByText('Italian')).toBeInTheDocument()
+    const categories = screen.getByRole('list', { name: 'Categories' })
+    expect(Array.from(categories.children, (item) => item.textContent)).toEqual([
+      'Fiction',
+      'Science Fiction',
+      'Fantasy',
+    ])
+    expect(document.title).toBe('Dune - Book Search')
+  })
+
   it('hides facts the API did not send instead of showing empty labels', async () => {
     stubFetch(() => ({ body: { id: 'abc123', volumeInfo: { title: 'Bare book' } } }))
     renderApp('/books/abc123')
