@@ -22,9 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-# local notes and secrets
-.env.local
-TASK.md
-PLAN.md
-QUESTIONS.md

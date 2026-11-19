@@ -1,6 +1,4 @@
 dist
 node_modules
 package-lock.json
-TASK.md
-PLAN.md
-QUESTIONS.md
+*.md

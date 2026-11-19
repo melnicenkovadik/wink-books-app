@@ -38,7 +38,7 @@ export function useSearchUrlState() {
   const [searchParams, setSearchParams] = useSearchParams()
   const state = parseSearchState(searchParams)
 
-  // Typing replaces the history entry so Back does not step through every keystroke.
+  // replace, otherwise Back walks through every typed letter
   const setQuery = (raw: string) => {
     setSearchParams(
       (prev) => toSearchParams({ ...parseSearchState(prev), q: normalizeQuery(raw), page: 1 }),

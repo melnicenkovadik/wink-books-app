@@ -9,8 +9,7 @@ export type FetchCall = {
 
 type Reply = { body: unknown; status?: number }
 
-// Replaces fetch. Every request is recorded with its AbortSignal.
-// With `autoReply` requests are answered at once, otherwise the test answers them by hand.
+// without autoReply the test has to call respond()/fail() itself
 export function stubFetch(autoReply?: (url: URL) => Reply) {
   const calls: FetchCall[] = []
 

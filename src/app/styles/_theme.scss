@@ -1,10 +1,7 @@
-// Bootstrap variable overrides. Must be loaded before Bootstrap itself.
-
-// WiNK accent colour, used for the cover placeholder and decoration only:
-// white text on it has a contrast ratio of 3.25:1.
+// brand colour from the task. too light for text on white (3.25:1)
 $accent: #ff5039;
 
-// Darker shade of the same hue for links and buttons (5.3:1 on white).
+// so links and buttons use a darker one
 $primary: #c8321e;
 
 $body-bg: #f8f9fa;

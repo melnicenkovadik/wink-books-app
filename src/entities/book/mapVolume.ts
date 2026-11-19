@@ -4,7 +4,7 @@ export const PLACEHOLDER_COVER_URL = 'https://placehold.co/400x600/FF5039/FFF?te
 
 const toHttps = (url: string | undefined) => url?.replace(/^http:\/\//, 'https://')
 
-// Google returns descriptions as HTML. We only ever render them as text.
+// description comes as html, we only show it as text
 export function htmlToText(html: string | undefined): string {
   if (!html) return ''
   const withBreaks = html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n')

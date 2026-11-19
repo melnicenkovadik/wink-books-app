@@ -35,7 +35,7 @@ export function Paginator({ page, pageCount, onPageChange }: Props) {
         {getPageItems(page, pageCount).map((item, index) =>
           item === 'ellipsis' ? (
             <li key={`gap-${index}`} className="page-item disabled d-none d-sm-block">
-              <span className="page-link">…</span>
+              <span className="page-link">...</span>
             </li>
           ) : (
             <li

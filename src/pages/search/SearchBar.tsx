@@ -15,15 +15,13 @@ export function SearchBar({ query, onSearch }: Props) {
   const { key: locationKey } = useLocation()
   const [syncedLocationKey, setSyncedLocationKey] = useState(locationKey)
 
-  // After any navigation (Back, Forward, a page click) the field follows the URL,
-  // unless it already says the same thing, e.g. while the user is typing.
+  // back/forward: take the value from the url, but don't touch what is being typed
   if (locationKey !== syncedLocationKey) {
     setSyncedLocationKey(locationKey)
     if (normalizeQuery(text) !== query) setText(query)
   }
 
-  // A navigation also drops a search that is still waiting for the debounce,
-  // so a stale timer cannot overwrite the URL afterwards.
+  // and drop the pending search, or the old timer overwrites the url later
   useEffect(() => () => window.clearTimeout(timer.current), [locationKey])
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -31,7 +29,6 @@ export function SearchBar({ query, onSearch }: Props) {
     setText(value)
     window.clearTimeout(timer.current)
 
-    // Clearing the field should clear the results right away.
     if (normalizeQuery(value) === '') {
       onSearch('')
       return
@@ -48,7 +45,7 @@ export function SearchBar({ query, onSearch }: Props) {
         id="search"
         type="search"
         className="form-control form-control-lg"
-        placeholder="Title, author, ISBN…"
+        placeholder="Title, author, ISBN"
         autoComplete="off"
         value={text}
         onChange={handleChange}

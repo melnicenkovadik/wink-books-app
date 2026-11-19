@@ -7,7 +7,7 @@ import { renderApp } from '../../test/renderApp'
 const searchInput = () => screen.getByRole('searchbox', { name: 'Search books' })
 const currentUrl = () => screen.getByTestId('url').textContent
 
-// Answers every search with books named after the query and page: "harry-p2-1", "harry-p2-2"…
+// books are named after the query and page: harry-p2-1, harry-p2-2
 const replyByQuery = (url: URL) => {
   const q = url.searchParams.get('q')
   const limit = Number(url.searchParams.get('maxResults'))
@@ -96,7 +96,7 @@ describe('live search', () => {
     await waitFor(() => expect(calls).toHaveLength(2))
 
     expect(screen.queryByText('Book ha-1')).not.toBeInTheDocument()
-    expect(screen.getByText('Loading results…')).toBeInTheDocument()
+    expect(screen.getByText('Loading results...')).toBeInTheDocument()
   })
 
   it('reuses the cache when the user goes back to an earlier query', async () => {
@@ -267,7 +267,7 @@ describe('result states', () => {
     stubFetch(() => ({ body: { kind: 'books#volumes', totalItems: 0 } }))
     renderApp('/?q=zzzz')
 
-    expect(await screen.findByText('No books found for “zzzz”.')).toBeInTheDocument()
+    expect(await screen.findByText('No books found for "zzzz".')).toBeInTheDocument()
   })
 
   it('reports an exhausted daily quota without a retry button', async () => {

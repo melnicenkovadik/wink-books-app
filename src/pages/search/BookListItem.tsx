@@ -17,7 +17,7 @@ export function BookListItem({ book, shouldFocus }: Props) {
     if (shouldFocus) titleLink.current?.focus()
   }, [shouldFocus])
 
-  // Remember which book was opened, so Back can return focus to it.
+  // so that Back can put focus on this book again
   const rememberBook = () => {
     navigate(location.pathname + location.search, {
       replace: true,

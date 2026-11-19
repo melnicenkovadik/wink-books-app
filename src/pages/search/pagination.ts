@@ -4,7 +4,7 @@ export function getPageCount(totalItems: number, limit: number) {
   return Math.ceil(totalItems / limit)
 }
 
-// First, last, current and its neighbours, with gaps collapsed: [1, …, 4, 5, 6, …, 120]
+// e.g. [1, 'ellipsis', 4, 5, 6, 'ellipsis', 120]
 export function getPageItems(page: number, pageCount: number): PageItem[] {
   const pages = [1, page - 1, page, page + 1, pageCount].filter((p) => p >= 1 && p <= pageCount)
   const unique = [...new Set(pages)].sort((a, b) => a - b)

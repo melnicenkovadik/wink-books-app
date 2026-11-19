@@ -19,7 +19,7 @@ function isDailyQuota(body: GoogleErrorBody) {
   return /perday/i.test(limit ?? '') || /per day/i.test(body.error?.message ?? '')
 }
 
-// Returns null for a cancelled request: that is not something to show to the user.
+// null = cancelled request, nothing to show
 export function describeApiError(
   error: FetchBaseQueryError | SerializedError | undefined,
 ): ApiError | null {

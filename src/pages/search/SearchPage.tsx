@@ -73,7 +73,7 @@ export function SearchPage() {
       return (
         <>
           <p className="visually-hidden" role="status">
-            Loading results…
+            Loading results...
           </p>
           <BookListSkeleton rows={limit} />
         </>
@@ -89,7 +89,7 @@ export function SearchPage() {
       if (page === 1) {
         return (
           <p className="text-center py-5" role="status">
-            No books found for “{q}”.
+            No books found for "{q}".
           </p>
         )
       }

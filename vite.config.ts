@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
-// CodeSandbox serves the preview from <id>-<port>.csb.app, which Vite blocks by default.
+// codesandbox preview runs on <id>-5173.csb.app, vite blocks unknown hosts
 const allowedHosts = [
   process.env.CODESANDBOX_HOST?.replace('$PORT', '5173'),
   process.env.VITE_ALLOWED_HOST,
@@ -18,7 +18,7 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        // Bootstrap 5.3 still uses @import and the old color functions.
+        // bootstrap 5.3 is still on @import
         silenceDeprecations: ['import', 'global-builtin', 'color-functions', 'if-function'],
       },
     },

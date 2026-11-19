@@ -59,7 +59,7 @@ export function BookDetailsPage() {
       <>
         {backLink}
         <p role="status" className="visually-hidden">
-          Loading book…
+          Loading book...
         </p>
         <div className="row g-4 placeholder-glow" aria-hidden="true">
           <div className="col-8 col-sm-5 col-md-4 col-lg-3 mx-auto mx-md-0">

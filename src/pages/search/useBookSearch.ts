@@ -7,8 +7,6 @@ type ActiveRequest = {
   abort: () => void
 }
 
-// Starts the search for the given arguments and cancels the previous one when they change.
-// The returned state always belongs to the current arguments, never to an earlier search.
 export function useBookSearch(args: SearchBooksArgs | null) {
   const [trigger] = useLazySearchBooksQuery()
   const { currentData, error, isFetching } = booksApi.endpoints.searchBooks.useQueryState(
@@ -20,7 +18,6 @@ export function useBookSearch(args: SearchBooksArgs | null) {
   const page = args?.page
   const limit = args?.limit
 
-  // Every request goes through here, so there is always exactly one to cancel.
   const start = (searchArgs: SearchBooksArgs, key: string, preferCache: boolean) => {
     activeRequest.current?.abort()
     const request = trigger(searchArgs, preferCache)
@@ -29,8 +26,8 @@ export function useBookSearch(args: SearchBooksArgs | null) {
 
   useEffect(() => {
     const key = q && page && limit ? `${q}|${page}|${limit}` : null
-    // Same arguments again (React StrictMode runs effects twice): keep the running request.
-    // Aborting and restarting it in the same tick would be ignored by RTK Query as a duplicate.
+    // StrictMode runs this twice. If we abort and start the same request right away,
+    // RTK Query still sees it as pending and skips it, so just keep the first one.
     if (key === (activeRequest.current?.key ?? null)) return
 
     if (key && q && page && limit) {
@@ -39,7 +36,7 @@ export function useBookSearch(args: SearchBooksArgs | null) {
       activeRequest.current?.abort()
       activeRequest.current = null
     }
-    // oxlint-disable-next-line react/exhaustive-deps -- `start` only wraps the stable trigger
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [trigger, q, page, limit])
 
   const retry = () => {

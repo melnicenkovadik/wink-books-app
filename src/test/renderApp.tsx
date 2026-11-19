@@ -6,7 +6,6 @@ import { MemoryRouter, useLocation, useNavigate } from 'react-router'
 import { App } from '../app/App'
 import { createStore } from '../app/store'
 
-// Shows the current URL and stands in for the browser Back button.
 function BrowserChrome() {
   const location = useLocation()
   const navigate = useNavigate()

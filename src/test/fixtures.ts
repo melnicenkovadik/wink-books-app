@@ -23,7 +23,7 @@ export function makeResponse(prefix: string, count: number, totalItems = 100) {
   }
 }
 
-// The real response Google sent on 2026-11-19 for a request without an API key.
+// real response for a request without an api key
 export const dailyQuotaError = {
   error: {
     code: 429,
