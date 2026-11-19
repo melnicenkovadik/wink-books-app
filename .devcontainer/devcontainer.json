@@ -1,0 +1,4 @@
+{
+  "name": "wink-books-app",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:24"
+}
