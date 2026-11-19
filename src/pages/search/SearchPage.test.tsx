@@ -241,7 +241,7 @@ describe('pagination and page size', () => {
   })
 
   it('does not trust a total that grows on later pages and learns where results end', async () => {
-    // what Google really does: 476 on the first page, thousands later, nothing after ~page 4
+    // what Google really does: a small total on the first page, thousands later, books end early
     stubFetch((url) => {
       const start = Number(url.searchParams.get('startIndex'))
       if (start === 0) return { body: makeResponse('p1', 10, 60) }
@@ -258,11 +258,29 @@ describe('pagination and page size', () => {
 
     await user.click(screen.getByRole('button', { name: 'Page 6' }))
     expect(await screen.findByText('No results on this page.')).toBeInTheDocument()
+  })
 
-    await user.click(screen.getByRole('button', { name: 'Go to page 2' }))
-    expect(await screen.findByText('Book p2-1')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Page 5' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Page 6' })).not.toBeInTheDocument()
+  it('finds the real last page from an empty one with a few requests', async () => {
+    // 100 pages promised, books only on the first 37
+    const calls = stubFetch((url) => {
+      const page = Number(url.searchParams.get('startIndex')) / 10 + 1
+      return page <= 37
+        ? { body: makeResponse(`p${page}`, 10, 1000) }
+        : { body: { kind: 'books#volumes', totalItems: 1000 } }
+    })
+    const { user } = renderApp('/?q=harry')
+    await screen.findByText('Book p1-1')
+
+    await user.click(screen.getByRole('button', { name: 'Page 100' }))
+    expect(await screen.findByText('No results on this page.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Go to the last page with results' }))
+
+    expect(await screen.findByText('Book p37-1')).toBeInTheDocument()
+    expect(currentUrl()).toBe('/?q=harry&page=37')
+    expect(screen.getByRole('button', { name: 'Page 37' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.queryByRole('button', { name: 'Page 38' })).not.toBeInTheDocument()
+    expect(calls.length).toBeLessThanOrEqual(10)
   })
 
   it('offers a way back from an empty far page without jumping on its own', async () => {
@@ -276,8 +294,9 @@ describe('pagination and page size', () => {
     expect(await screen.findByText('No results on this page.')).toBeInTheDocument()
     expect(calls).toHaveLength(1)
 
-    await user.click(screen.getByRole('button', { name: 'Go to page 1' }))
+    await user.click(screen.getByRole('button', { name: 'Go to the last page with results' }))
     expect(await screen.findByText('Book p1-1')).toBeInTheDocument()
+    expect(currentUrl()).toBe('/?q=harry')
   })
 })
 

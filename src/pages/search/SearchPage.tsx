@@ -12,6 +12,7 @@ import { Paginator } from './Paginator'
 import { getKnownPageCount } from './pagination'
 import { SearchBar } from './SearchBar'
 import { useBookSearch } from './useBookSearch'
+import { useFindLastPage } from './useFindLastPage'
 import { useSearchUrlState } from './useSearchUrlState'
 
 const SUGGESTIONS = ['Dune', 'Tolkien', 'Italian cooking', 'JavaScript']
@@ -28,6 +29,8 @@ export function SearchPage() {
   const apiError = describeApiError(error)
   const bounds = getSearchBounds(useSelector(selectSearchQueries), q, limit)
   const focusBookId = (location.state as { focusBookId?: string } | null)?.focusBookId
+
+  const { findLastPage, isSearching } = useFindLastPage()
 
   const handlePageChange = (nextPage: number) => {
     setPage(nextPage)
@@ -106,15 +109,29 @@ export function SearchPage() {
           </p>
         )
       }
+      const goToLastPage = async () => {
+        const found = await findLastPage({
+          q,
+          limit,
+          lastPageWithBooks: lastPage,
+          firstEmptyPage: bounds.firstEmptyPage ?? page,
+        })
+        handlePageChange(found)
+      }
+
       return (
         <div className="text-center py-5">
           <p role="status">No results on this page.</p>
+          <p className="small text-body-secondary">
+            Google Books reports more results than it can return.
+          </p>
           <button
             type="button"
             className="btn btn-primary mb-4"
-            onClick={() => handlePageChange(lastPage)}
+            disabled={isSearching}
+            onClick={goToLastPage}
           >
-            Go to page {lastPage}
+            {isSearching ? 'Looking for the last page...' : 'Go to the last page with results'}
           </button>
           {paginator}
         </div>

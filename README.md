@@ -54,7 +54,8 @@ On CodeSandbox I set it in the sandbox env variables.
   one broken book card does not take down the list, and the search bar stays usable.
 - `totalItems` from Google is not reliable. It grows on later pages and promises far more than the
   API returns ("harry potter" says 476 on page 1, 21 762 later, and the books end around 400). The
-  page count uses the smallest total seen for the query and is cut at the first empty page.
+  page count uses the smallest total seen for the query and is cut at the first empty page. On an
+  empty page one button finds the real last page (it halves the range, about 7 requests).
 - For books that are not for sale Google sends a Play Store `infoLink` that opens a 404. In that
   case the button opens the Google Books page of the same volume.
 - Only books are requested (`printType=books`), by default the endpoint also returns magazines.
