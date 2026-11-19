@@ -1,0 +1,43 @@
+@import 'theme';
+@import 'bootstrap/scss/bootstrap';
+
+.app-header {
+  border-top: 4px solid $accent;
+}
+
+.book-cover {
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  background-color: $gray-200;
+  border-radius: $border-radius-sm;
+}
+
+.book-row-cover {
+  flex: 0 0 auto;
+  width: 64px;
+
+  @include media-breakpoint-up(sm) {
+    width: 96px;
+  }
+}
+
+.book-row-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.book-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.book-details-text {
+  overflow-wrap: anywhere;
+}
+
+.book-details-description {
+  white-space: pre-line;
+}
