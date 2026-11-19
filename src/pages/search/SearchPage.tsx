@@ -11,6 +11,8 @@ import { SearchBar } from './SearchBar'
 import { useBookSearch } from './useBookSearch'
 import { useSearchUrlState } from './useSearchUrlState'
 
+const SUGGESTIONS = ['Dune', 'Tolkien', 'Italian cooking', 'JavaScript']
+
 export function SearchPage() {
   const { q, page, limit, setQuery, setLimit, setPage } = useSearchUrlState()
   const location = useLocation()
@@ -41,7 +43,21 @@ export function SearchPage() {
 
     if (!q) {
       return (
-        <p className="text-body-secondary text-center py-5">Start typing to search for books.</p>
+        <div className="text-center py-5">
+          <p className="mb-3">Start typing to search for books.</p>
+          <div className="search-suggestions">
+            {SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                className="search-chip"
+                onClick={() => setQuery(suggestion)}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        </div>
       )
     }
 
@@ -113,7 +129,7 @@ export function SearchPage() {
         <p className="small text-body-secondary" role="status">
           About {data.totalItems.toLocaleString('en')} results, page {page} of {pageCount}
         </p>
-        <ul className="list-group mb-4">
+        <ul className="book-grid">
           {data.books.map((book) => (
             <BookListItem key={book.id} book={book} shouldFocus={book.id === focusBookId} />
           ))}
@@ -125,16 +141,29 @@ export function SearchPage() {
 
   return (
     <>
-      <h1 className="visually-hidden">Search books</h1>
-      <div className="row g-3 align-items-end mb-4">
-        <div className="col-12 col-md">
-          <SearchBar query={q} onSearch={setQuery} />
+      <section className={q ? 'search-hero-compact' : 'search-hero'}>
+        <div className="container">
+          {q ? (
+            <h1 className="visually-hidden">Search books</h1>
+          ) : (
+            <div>
+              <h1 className="search-hero-title">Find your next book</h1>
+              <p className="search-hero-text">
+                Search millions of titles from Google Books by title, author or ISBN.
+              </p>
+            </div>
+          )}
+          <div className="row g-3 align-items-end">
+            <div className={q ? 'col' : 'col-12 col-md'}>
+              <SearchBar query={q} onSearch={setQuery} />
+            </div>
+            <div className={q ? 'col-auto' : 'col-6 col-md-auto'}>
+              <PageSizeSelect value={limit} onChange={setLimit} />
+            </div>
+          </div>
         </div>
-        <div className="col-6 col-md-auto">
-          <PageSizeSelect value={limit} onChange={setLimit} />
-        </div>
-      </div>
-      <div ref={results} tabIndex={-1} className="search-results">
+      </section>
+      <div ref={results} tabIndex={-1} className="container py-4 search-results">
         {renderResults()}
       </div>
     </>
