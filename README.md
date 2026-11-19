@@ -5,6 +5,9 @@ Test task for WiNK. A React app that searches Google Books: live search, paginat
 
 Stack: React 19, TypeScript, Redux Toolkit (RTK Query), React Router, Bootstrap 5 with Sass.
 
+**Live:** https://wink-books-app.vercel.app (backup demo, always on). The CodeSandbox link is in
+the email, a sandbox that was asleep takes a few seconds to wake up.
+
 ## Run
 
 Node 24 is needed (there is an `.nvmrc`).
@@ -59,7 +62,10 @@ On CodeSandbox I set it in the sandbox env variables.
 - For books that are not for sale Google sends a Play Store `infoLink` that opens a 404. In that
   case the button opens the Google Books page of the same volume.
 - Only books are requested (`printType=books`), by default the endpoint also returns magazines.
-- Book descriptions come as HTML. They are converted to plain text, nothing is injected as HTML.
+- Book descriptions come as HTML. In the list they are plain text. On the book page the
+  formatting is kept, but the HTML is never injected: the parsed tree is rebuilt from React
+  elements, only a few tags are allowed and attributes are dropped (`BookDescription.tsx`).
+- Light and dark theme, the choice is saved. The first visit follows the system setting.
 - Bootstrap instead of Tailwind because the task has Bootstrap in "Required". Theme colours are in
   `src/app/styles/_theme.scss`. `#FF5039` is used for the cover placeholder as asked and as the
   accent colour, but text links and buttons use a darker shade, white on `#FF5039` is hard to read.
@@ -70,15 +76,19 @@ On CodeSandbox I set it in the sandbox env variables.
 src/
   app/        store, routes, styles
   pages/      search, book-details, not-found
-  entities/   book: api, types, mapping, cover
-  shared/     config
+  entities/   book: api, retries, types, mapping, cover, description
+  shared/     config, theme, error boundary and alerts
   test/       test helpers
 ```
 
 ## Tests
 
-Vitest + Testing Library. `fetch` is stubbed, the tests check requests, aborts, late responses and
-cache. Layout was checked by hand on 360, 768 and 1280 px.
+`npm test` runs 127 tests (Vitest + Testing Library). `fetch` is replaced with a stub that records
+every request and its `AbortSignal`, and the app is rendered in `StrictMode` like in production
+code, so the tests check real behaviour: one request per character, cancelled requests, late
+responses, cache hits, automatic retries, the real end of the results, error states, Back/Forward,
+focus, the theme switch and the sanitised description. Layout was checked by hand on 360, 768 and
+1280 px.
 
 ## Requirements, and where to look
 
