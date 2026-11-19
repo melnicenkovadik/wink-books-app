@@ -2,5 +2,4 @@ export { booksApi, useGetBookByIdQuery, useLazySearchBooksQuery } from './booksA
 export { describeApiError } from './apiError'
 export { PLACEHOLDER_COVER_URL } from './mapVolume'
 export { BookCover } from './BookCover'
-export { GoogleAttribution } from './GoogleAttribution'
 export type { Book, SearchBooksArgs } from './types'

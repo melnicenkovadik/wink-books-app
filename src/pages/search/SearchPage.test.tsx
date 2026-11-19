@@ -21,7 +21,6 @@ describe('live search', () => {
     renderApp()
 
     expect(screen.getByText('Start typing to search for books.')).toBeInTheDocument()
-    expect(screen.getByAltText('Powered by Google')).toBeInTheDocument()
     expect(calls).toHaveLength(0)
   })
 
@@ -289,18 +288,13 @@ describe('result states', () => {
     )
   })
 
-  it('gives every row a separate link to Google Books', async () => {
+  it('links every book to its details page', async () => {
     stubFetch(() => ({ body: makeResponse('harry', 2) }))
     renderApp('/?q=harry')
 
-    const row = (await screen.findByText('Book harry-1')).closest('li')!
-    const external = within(row).getByRole('link', { name: 'View on Google Books' })
-
-    expect(external).toHaveAttribute('href', 'https://books.google.com/books?id=harry-1')
-    expect(within(row).getByRole('link', { name: 'Book harry-1' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Book harry-1' })).toHaveAttribute(
       'href',
       '/books/harry-1',
     )
-    expect(row.querySelector('a a')).toBeNull()
   })
 })

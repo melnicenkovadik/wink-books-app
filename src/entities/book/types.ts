@@ -14,15 +14,12 @@ export type VolumeDto = {
     publisher?: string
     publishedDate?: string
     description?: string
-    industryIdentifiers?: { type: string; identifier: string }[]
     pageCount?: number
     categories?: string[]
     averageRating?: number
     imageLinks?: ImageLinks
     language?: string
-    previewLink?: string
     infoLink?: string
-    canonicalVolumeLink?: string
   }
 }
 
@@ -45,7 +42,6 @@ export type Book = {
   language?: string
   coverUrl: string
   infoLink?: string
-  googleBooksUrl?: string
 }
 
 export type SearchBooksArgs = {

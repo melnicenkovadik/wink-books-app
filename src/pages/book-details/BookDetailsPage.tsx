@@ -1,10 +1,5 @@
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
-import {
-  BookCover,
-  describeApiError,
-  GoogleAttribution,
-  useGetBookByIdQuery,
-} from '../../entities/book'
+import { BookCover, describeApiError, useGetBookByIdQuery } from '../../entities/book'
 import { GOOGLE_BOOKS_API_KEY } from '../../shared/config'
 
 export function BookDetailsPage() {
@@ -114,28 +109,16 @@ export function BookDetailsPage() {
             </dl>
           )}
 
-          <div className="d-flex flex-wrap align-items-center gap-3 mb-4">
-            {book.infoLink ? (
-              <a
-                className="btn btn-primary"
-                href={book.infoLink}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View on Google Books
-              </a>
-            ) : (
-              <span className="text-body-secondary small">
-                Google Books did not provide an info link for this book.{' '}
-                {book.googleBooksUrl && (
-                  <a href={book.googleBooksUrl} target="_blank" rel="noopener noreferrer">
-                    Open in Google Books
-                  </a>
-                )}
-              </span>
-            )}
-            <GoogleAttribution />
-          </div>
+          {book.infoLink && (
+            <a
+              className="btn btn-primary mb-4"
+              href={book.infoLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View on Google Books
+            </a>
+          )}
 
           <h2 className="h5">Description</h2>
           <p className="book-details-description">

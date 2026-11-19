@@ -23,7 +23,6 @@ describe('book details', () => {
     expect(calls[0].url.pathname).toBe('/books/v1/volumes/abc123')
     expect(screen.getByText('Bloomsbury')).toBeInTheDocument()
     expect(screen.getByText('Full description')).toBeInTheDocument()
-    expect(screen.getByAltText('Powered by Google')).toBeInTheDocument()
   })
 
   it('links to the infoLink of the book', async () => {
@@ -36,20 +35,12 @@ describe('book details', () => {
     )
   })
 
-  it('says so when Google did not send an infoLink and offers another link', async () => {
-    stubFetch(() => ({
-      body: makeVolume('abc123', {
-        infoLink: undefined,
-        canonicalVolumeLink: 'https://books.google.com/books/about/X.html?id=abc123',
-      }),
-    }))
+  it('shows no Google Books link when the API did not send an infoLink', async () => {
+    stubFetch(() => ({ body: makeVolume('abc123', { infoLink: undefined }) }))
     renderApp('/books/abc123')
 
-    expect(await screen.findByText(/Google Books did not provide an info link/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Open in Google Books' })).toHaveAttribute(
-      'href',
-      'https://books.google.com/books/about/X.html?id=abc123',
-    )
+    expect(await screen.findByRole('heading', { name: 'Book abc123' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'View on Google Books' })).not.toBeInTheDocument()
   })
 
   it('shows "Book not found" for an unknown id', async () => {

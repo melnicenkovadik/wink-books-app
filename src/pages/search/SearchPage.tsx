@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { useLocation } from 'react-router'
-import { describeApiError, GoogleAttribution } from '../../entities/book'
+import { describeApiError } from '../../entities/book'
 import { GOOGLE_BOOKS_API_KEY } from '../../shared/config'
 import { BookListItem } from './BookListItem'
 import { BookListSkeleton } from './BookListSkeleton'
@@ -117,16 +117,13 @@ export function SearchPage() {
   return (
     <>
       <h1 className="visually-hidden">Search books</h1>
-      <div className="row g-3 align-items-end mb-2">
+      <div className="row g-3 align-items-end mb-4">
         <div className="col-12 col-md">
           <SearchBar query={q} onSearch={setQuery} />
         </div>
         <div className="col-6 col-md-auto">
           <PageSizeSelect value={limit} onChange={setLimit} />
         </div>
-      </div>
-      <div className="d-flex justify-content-end mb-3">
-        <GoogleAttribution />
       </div>
       <div ref={results} tabIndex={-1} className="search-results">
         {renderResults()}

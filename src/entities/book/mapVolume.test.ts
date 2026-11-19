@@ -19,7 +19,6 @@ describe('mapVolume', () => {
       authors: ['A', 'B'],
       coverUrl: 'https://books.google.com/cover.jpg',
       infoLink: 'https://books.google.com/books?id=abc',
-      googleBooksUrl: 'https://books.google.com/books?id=abc',
     })
   })
 
@@ -36,23 +35,7 @@ describe('mapVolume', () => {
       description: '',
       categories: [],
       infoLink: undefined,
-      googleBooksUrl: undefined,
     })
-  })
-
-  it('keeps infoLink empty and falls back to other Google Books links', () => {
-    const withCanonical = mapVolume({
-      id: 'abc',
-      volumeInfo: { canonicalVolumeLink: 'https://books.google.com/books/about/X.html?id=abc' },
-    })
-    expect(withCanonical.infoLink).toBeUndefined()
-    expect(withCanonical.googleBooksUrl).toBe('https://books.google.com/books/about/X.html?id=abc')
-
-    const withIsbn = mapVolume({
-      id: 'abc',
-      volumeInfo: { industryIdentifiers: [{ type: 'ISBN_13', identifier: '9780747532743' }] },
-    })
-    expect(withIsbn.googleBooksUrl).toBe('https://books.google.com/books?vid=ISBN9780747532743')
   })
 })
 

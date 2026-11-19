@@ -52,14 +52,9 @@ export function BookListItem({ book, shouldFocus }: Props) {
           </Link>
         </h2>
         <p className="small text-body-secondary mb-1">{byline}</p>
-        <p className="book-description small mb-2">
+        <p className="book-description small mb-0">
           {book.description || 'No description available.'}
         </p>
-        {book.googleBooksUrl && (
-          <a className="small" href={book.googleBooksUrl} target="_blank" rel="noopener noreferrer">
-            View on Google Books
-          </a>
-        )}
       </div>
     </li>
   )

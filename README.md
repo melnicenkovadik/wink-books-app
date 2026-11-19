@@ -77,10 +77,6 @@ comes back empty, the app says so and offers a way back to page 1.
 plain text only. A book without an image uses
 `https://placehold.co/400x600/FF5039/FFF?text=Book+Cover`.
 
-**Google Books branding.** The API terms ask for a "Powered by Google" logo next to the results
-and a visible link to Google Books for every book. Both are there, and results keep the order
-returned by the API.
-
 ## Decisions
 
 - **Bootstrap, not Tailwind.** The task lists Bootstrap under "Required" and Tailwind under "Nice

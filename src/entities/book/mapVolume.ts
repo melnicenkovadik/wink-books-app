@@ -16,8 +16,6 @@ export function htmlToText(html: string | undefined): string {
 export function mapVolume(volume: VolumeDto): Book {
   const info = volume.volumeInfo ?? {}
   const images = info.imageLinks ?? {}
-  const isbn = info.industryIdentifiers?.find((item) => item.type.startsWith('ISBN'))?.identifier
-  const infoLink = toHttps(info.infoLink)
 
   return {
     id: volume.id,
@@ -34,10 +32,6 @@ export function mapVolume(volume: VolumeDto): Book {
     coverUrl:
       toHttps(images.medium ?? images.small ?? images.thumbnail ?? images.smallThumbnail) ??
       PLACEHOLDER_COVER_URL,
-    infoLink,
-    googleBooksUrl:
-      infoLink ??
-      toHttps(info.canonicalVolumeLink ?? info.previewLink) ??
-      (isbn ? `https://books.google.com/books?vid=ISBN${isbn}` : undefined),
+    infoLink: toHttps(info.infoLink),
   }
 }
