@@ -34,6 +34,7 @@ export function mapVolume(volume: VolumeDto): Book {
     publisher: info.publisher,
     publishedDate: info.publishedDate,
     description: htmlToText(info.description),
+    descriptionHtml: info.description,
     pageCount: info.pageCount,
     categories: info.categories ?? [],
     averageRating: info.averageRating,

@@ -39,6 +39,7 @@ export type Book = {
   publisher?: string
   publishedDate?: string
   description: string
+  descriptionHtml?: string
   pageCount?: number
   categories: string[]
   averageRating?: number

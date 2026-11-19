@@ -6,6 +6,7 @@ import { renderApp } from '../../test/renderApp'
 vi.mock('../../shared/config', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../shared/config')>()),
   GOOGLE_BOOKS_API_KEY: '',
+  HAS_API_KEY: false,
 }))
 
 it('explains that the API key is missing instead of calling the API', async () => {

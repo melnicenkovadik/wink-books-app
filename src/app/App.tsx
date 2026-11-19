@@ -3,6 +3,7 @@ import { BookDetailsPage } from '../pages/book-details'
 import { NotFoundPage } from '../pages/not-found/NotFoundPage'
 import { SearchPage } from '../pages/search'
 import { ErrorBoundary } from '../shared/ui/ErrorBoundary'
+import { ThemeToggle } from './ThemeToggle'
 
 export function App() {
   const location = useLocation()
@@ -10,13 +11,14 @@ export function App() {
   return (
     <>
       <header className="app-header">
-        <div className="container py-3">
+        <div className="container py-3 d-flex align-items-center justify-content-between">
           <Link to="/" className="app-brand">
             <span className="app-brand-mark" aria-hidden="true">
               B
             </span>
             Book Search
           </Link>
+          <ThemeToggle />
         </div>
       </header>
       <main>

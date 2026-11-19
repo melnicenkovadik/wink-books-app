@@ -1,36 +1,16 @@
 import { useRef } from 'react'
-import { useSelector } from 'react-redux'
-import { useLocation } from 'react-router'
-import { describeApiError, getSearchBounds, selectSearchQueries } from '../../entities/book'
-import { GOOGLE_BOOKS_API_KEY } from '../../shared/config'
-import { ErrorAlert } from '../../shared/ui/ErrorAlert'
+import { HAS_API_KEY } from '../../shared/config'
 import { ErrorBoundary } from '../../shared/ui/ErrorBoundary'
-import { BookListItem } from './BookListItem'
-import { BookListSkeleton } from './BookListSkeleton'
+import { MissingApiKeyAlert } from '../../shared/ui/MissingApiKeyAlert'
 import { PageSizeSelect } from './PageSizeSelect'
-import { Paginator } from './Paginator'
-import { getKnownPageCount } from './pagination'
 import { SearchBar } from './SearchBar'
-import { useBookSearch } from './useBookSearch'
-import { useFindLastPage } from './useFindLastPage'
+import { SearchHint } from './SearchHint'
+import { SearchResults } from './SearchResults'
 import { useSearchUrlState } from './useSearchUrlState'
-
-const SUGGESTIONS = ['Dune', 'Tolkien', 'Italian cooking', 'JavaScript']
 
 export function SearchPage() {
   const { q, page, limit, setQuery, setLimit, setPage } = useSearchUrlState()
-  const location = useLocation()
   const results = useRef<HTMLDivElement>(null)
-
-  const hasApiKey = GOOGLE_BOOKS_API_KEY !== ''
-  const { data, error, isFetching, retry } = useBookSearch(
-    hasApiKey && q ? { q, page, limit } : null,
-  )
-  const apiError = describeApiError(error)
-  const bounds = getSearchBounds(useSelector(selectSearchQueries), q, limit)
-  const focusBookId = (location.state as { focusBookId?: string } | null)?.focusBookId
-
-  const { findLastPage, isSearching } = useFindLastPage()
 
   const handlePageChange = (nextPage: number) => {
     setPage(nextPage)
@@ -39,126 +19,9 @@ export function SearchPage() {
   }
 
   const renderResults = () => {
-    if (!hasApiKey) {
-      return (
-        <div className="alert alert-warning" role="alert">
-          <strong>API key is not configured.</strong> Add <code>VITE_GOOGLE_BOOKS_API_KEY</code> to{' '}
-          <code>.env.local</code> and restart the dev server. See the README for details.
-        </div>
-      )
-    }
-
-    if (!q) {
-      return (
-        <div className="text-center py-5">
-          <p className="mb-3">Start typing to search for books.</p>
-          <div className="search-suggestions">
-            {SUGGESTIONS.map((suggestion) => (
-              <button
-                key={suggestion}
-                type="button"
-                className="search-chip"
-                onClick={() => setQuery(suggestion)}
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        </div>
-      )
-    }
-
-    if (!data) {
-      if (apiError && !isFetching) {
-        return (
-          <ErrorAlert message={apiError.message} onRetry={apiError.canRetry ? retry : undefined}>
-            {page > 1 && (
-              <button
-                type="button"
-                className="btn btn-outline-danger btn-sm"
-                onClick={() => handlePageChange(1)}
-              >
-                Go to page 1
-              </button>
-            )}
-          </ErrorAlert>
-        )
-      }
-      return (
-        <>
-          <p className="visually-hidden" role="status">
-            Loading results...
-          </p>
-          <BookListSkeleton rows={limit} />
-        </>
-      )
-    }
-
-    const totalItems = bounds.totalItems ?? data.totalItems
-    const pageCount = getKnownPageCount(totalItems, limit, bounds)
-    const lastPage = bounds.lastPageWithBooks ?? 1
-    const paginator = (
-      <Paginator page={page} pageCount={pageCount} onPageChange={handlePageChange} />
-    )
-
-    if (data.books.length === 0) {
-      if (page === 1) {
-        return (
-          <p className="text-center py-5" role="status">
-            No books found for "{q}".
-          </p>
-        )
-      }
-      const goToLastPage = async () => {
-        const found = await findLastPage({
-          q,
-          limit,
-          lastPageWithBooks: lastPage,
-          firstEmptyPage: bounds.firstEmptyPage ?? page,
-        })
-        handlePageChange(found)
-      }
-
-      return (
-        <div className="text-center py-5">
-          <p role="status">No results on this page.</p>
-          <p className="small text-body-secondary">
-            Google Books reports more results than it can return.
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary mb-4"
-            disabled={isSearching}
-            onClick={goToLastPage}
-          >
-            {isSearching ? 'Looking for the last page...' : 'Go to the last page with results'}
-          </button>
-          {paginator}
-        </div>
-      )
-    }
-
-    return (
-      <>
-        <p className="small text-body-secondary" role="status">
-          About {totalItems.toLocaleString('en')} results, page {page} of {pageCount}
-        </p>
-        <ul className="book-grid">
-          {data.books.map((book) => (
-            <li key={book.id}>
-              <ErrorBoundary
-                fallback={
-                  <div className="book-card text-body-secondary">This book could not be shown.</div>
-                }
-              >
-                <BookListItem book={book} shouldFocus={book.id === focusBookId} />
-              </ErrorBoundary>
-            </li>
-          ))}
-        </ul>
-        {paginator}
-      </>
-    )
+    if (!HAS_API_KEY) return <MissingApiKeyAlert />
+    if (!q) return <SearchHint onSearch={setQuery} />
+    return <SearchResults q={q} page={page} limit={limit} onPageChange={handlePageChange} />
   }
 
   return (

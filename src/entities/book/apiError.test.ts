@@ -41,4 +41,28 @@ describe('describeApiError', () => {
     expect(describeApiError({ name: 'AbortError', message: 'Aborted' })).toBeNull()
     expect(describeApiError(undefined)).toBeNull()
   })
+
+  it.each([
+    [500, true],
+    [502, true],
+    [503, true],
+    [400, false],
+    [403, false],
+    [404, false],
+  ])('status %i: retry button %s', (status, canRetry) => {
+    expect(describeApiError({ status, data: {} })?.canRetry).toBe(canRetry)
+  })
+
+  it('falls back to a generic text when the response has no message', () => {
+    expect(describeApiError({ status: 418, data: {} })).toEqual({
+      message: 'Something went wrong.',
+      canRetry: true,
+    })
+  })
+
+  it('does not report a cancelled fetch as a network error', () => {
+    expect(
+      describeApiError({ status: 'FETCH_ERROR', error: 'AbortError: The operation was aborted.' }),
+    ).toBeNull()
+  })
 })

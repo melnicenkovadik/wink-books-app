@@ -136,6 +136,53 @@ describe('live search', () => {
   })
 })
 
+describe('home screen', () => {
+  it('starts a search from a suggestion and fills the field', async () => {
+    const calls = stubFetch(replyByQuery)
+    const { user } = renderApp()
+
+    await user.click(screen.getByRole('button', { name: 'Tolkien' }))
+
+    expect(await screen.findByText('Book Tolkien-p1-1')).toBeInTheDocument()
+    expect(searchInput()).toHaveValue('Tolkien')
+    expect(currentUrl()).toBe('/?q=Tolkien')
+    expect(calls).toHaveLength(1)
+  })
+
+  it('sends nothing for spaces only', async () => {
+    const calls = stubFetch(replyByQuery)
+    const { user } = renderApp()
+
+    await user.type(searchInput(), '   ')
+
+    expect(screen.getByText('Start typing to search for books.')).toBeInTheDocument()
+    expect(calls).toHaveLength(0)
+  })
+
+  it('collapses extra spaces before they reach the API and the URL', async () => {
+    const calls = stubFetch(replyByQuery)
+    const { user } = renderApp()
+
+    await user.click(searchInput())
+    await user.paste('  harry    potter ')
+
+    await screen.findByText('Book harry potter-p1-1')
+    expect(calls[0].url.searchParams.get('q')).toBe('harry potter')
+    expect(currentUrl()).toBe('/?q=harry+potter')
+    expect(searchInput()).toHaveValue('  harry    potter ')
+  })
+
+  it('shows a page for an unknown address with a way back', async () => {
+    stubFetch(replyByQuery)
+    const { user } = renderApp('/no/such/page')
+
+    expect(screen.getByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Back to search' }))
+
+    expect(screen.getByText('Start typing to search for books.')).toBeInTheDocument()
+  })
+})
+
 describe('history', () => {
   it('follows Back even when a typed search is still waiting for the debounce', async () => {
     stubFetch(replyByQuery)
@@ -395,6 +442,85 @@ describe('result states', () => {
 
     expect(await screen.findByText(/API key not valid/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Go to page 1' })).not.toBeInTheDocument()
+  })
+
+  it('shows the author, year and description of every book', async () => {
+    stubFetch(() => ({
+      body: {
+        totalItems: 1,
+        items: [
+          makeVolume('x', {
+            authors: ['Frank Herbert', 'Brian Herbert'],
+            publishedDate: '1965-08-01',
+            description: '<p>A <b>desert</b> planet.</p>',
+          }),
+        ],
+      },
+    }))
+    renderApp('/?q=dune')
+
+    expect(await screen.findByText('Frank Herbert, Brian Herbert')).toBeInTheDocument()
+    expect(screen.getByText('1965')).toBeInTheDocument()
+    expect(screen.getByText('A desert planet.')).toHaveClass('book-description')
+  })
+
+  it('fills the gaps when a book has no author and no description', async () => {
+    stubFetch(() => ({
+      body: {
+        totalItems: 1,
+        items: [makeVolume('x', { authors: undefined, description: undefined })],
+      },
+    }))
+    renderApp('/?q=dune')
+
+    expect(await screen.findByText('Unknown author')).toBeInTheDocument()
+    expect(screen.getByText('No description available.')).toBeInTheDocument()
+  })
+
+  it('keeps the order of the books as the API returned it', async () => {
+    stubFetch(() => ({
+      body: { totalItems: 3, items: [makeVolume('c'), makeVolume('a'), makeVolume('b')] },
+    }))
+    renderApp('/?q=dune')
+
+    await screen.findByText('Book c')
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'Book c',
+      'Book a',
+      'Book b',
+    ])
+  })
+
+  it('announces the number of results to screen readers', async () => {
+    stubFetch(() => ({ body: makeResponse('harry', 10, 1234) }))
+    renderApp('/?q=harry&page=2')
+
+    expect(await screen.findByText('About 1,234 results, page 2 of 124')).toHaveAttribute(
+      'role',
+      'status',
+    )
+  })
+
+  it('says when Google is down, after trying again by itself', async () => {
+    const calls = stubFetch(() => ({ body: {}, status: 503 }))
+    renderApp('/?q=harry')
+
+    expect(await screen.findByText('Google Books is temporarily unavailable.')).toBeInTheDocument()
+    expect(calls).toHaveLength(4)
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+  })
+
+  it('shows the reason Google gave for refusing the key', async () => {
+    stubFetch(() => ({
+      body: { error: { code: 403, message: 'Requests from this referer are blocked.' } },
+      status: 403,
+    }))
+    renderApp('/?q=harry')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Google Books refused the request (403). Requests from this referer are blocked.',
+    )
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
   })
 
   it('uses the WiNK placeholder for a book without a cover', async () => {
